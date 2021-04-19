@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style type="text/css">
+      body{padding: 20px;font-family: monospace;font-size: 12px;}
+      div{padding: 5px 0px;}
+      input{padding: 5px;width: 600px;}
+      .bordered{border: 1px solid #333;padding: 10px;border-radius: 5px;margin: 10px;display: inline-block;}
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script type="text/javascript">
+      function getRandomInRange(from, to, fixed) {
+        return (Math.random() * (to - from) + from).toFixed(fixed) * 1;
+      }
+      function capitalize(string) {
+        return (string.charAt(0).toUpperCase() + string.slice(1)).replace(/_/g, ' ');
+      }
+      $(document).ready(function(){
+        $('.fetch_weather').click(function(e){
+          e.preventDefault();
+          var location = $('[name="location"]').val();
+          if(!location){
+            alert('please enter location');
+            return
+          }
+          var lat = getRandomInRange(-180, 180, 3);
+          var long = getRandomInRange(-90, 90, 3)
+          
+          // Make Ajax call to fetch weather data
+          $.ajax({
+            url: '/ajax/weather/data/?lat=' + lat + '&long=' + long,
+            method: 'GET',
+            dataType: "json",
+            contentType: 'application/json',
+            success: function(data) {
+              var w_data = data.w_data;
+              if(w_data){
+                $('.w_info').html('');
+                var meta_data = w_data.properties.meta
+                $('.w_info').append('Last updated: ' +meta_data.updated_at + '<br><br>');
+                $('.w_info').append('<b>Units: </b><br>');
+                $.each(meta_data.units, function(k, v){
+                  $('.w_info').append('<b>' + capitalize(k) + ': </b>' + meta_data.units[k] + '<br>');
+                });
+
+                $('.w_info').append('<br><b>Weather History: </b><br>');
+                var timeseries = w_data.properties.timeseries;
+                
+                $.each(timeseries, function(i, each_record){
+                  var data_str = '<b>' + each_record.time + ': </b><br>';
+                  $.each(each_record.data, function(k, v){
+                    data_str += '<br><b>' + capitalize(k) + ': </b><br>'
+                    key_to_iterate = 'details';
+                    if(k != 'instant'){ key_to_iterate = 'summary' }
+                    $.each(each_record.data[k][key_to_iterate], function(k1, v1){
+                      data_str += '<b><u>' + capitalize(k1) + '</u>: </b>' + each_record.data[k][key_to_iterate][k1] + '<br>'
+                    });
+                  });
+                  
+                  $('.w_info').append('<div class="bordered">' + data_str + '</div>');
+                });
+              }
+              else{
+                $('.w_info').html('An error occurred. Please try again.');
+              }
+            }
+          })
+
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div>Please enter your location below:</div>
+    <div><input type="text" name="location" value="" placeholder='try searching for location like "new delhi", "new york" etc'></div>
+    <div><a href="#" class="fetch_weather">Get Weather Info</a></div><br>
+    <div class="w_info"></div>
+  </body>
+</html>
